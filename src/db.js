@@ -1,26 +1,29 @@
 // db.js
-import { MongoClient } from "mongodb";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import Movie from "./models/Movie.js";
 
-// URL de connexion MongoDB (ici pour Docker ou localhost)
-const uri = "mongodb://admin:adminpassword@localhost:27017/mydatabase?authSource=admin";
+dotenv.config();
 
-// Crée le client
-const client = new MongoClient(uri);
-
-let db;
+const uri = `mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}` +
+    `@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/` +
+    `${process.env.MONGO_DB}?authSource=admin`;
 
 export async function connectToDB() {
     try {
-        await client.connect();
-        console.log("Connecté à MongoDB !");
-        db = client.db(); // récupère la base par défaut
-        return db;
+        await mongoose.connect(uri);
+        console.log("MongoDB connecté avec Mongoose !");
+
+        await Movie.collection.createIndex({ title: "text" });
+        console.log("Index texte 'title' créé avec succès !");
     } catch (err) {
-        console.error("Erreur de connexion à MongoDB :", err);
+        console.error("Erreur MongoDB :", err);
+        process.exit(1);
     }
 }
 
+
 export function getDB() {
-    if (!db) throw new Error("ConnectToDB n'a pas encore été appelé !");
+    if (!db) throw new Error("connectToDB n'a pas encore été appelé !");
     return db;
 }
