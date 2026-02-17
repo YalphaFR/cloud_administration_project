@@ -30,26 +30,19 @@ for file in $(docker exec cloud-administration-project-db ls /data/csv 2>/dev/nu
   collection_name="${filename%.*}"
   echo "Importing $filename into collection $collection_name..."
   
-  docker exec -i cloud-administration-project-db mongoimport \
-    --db $MONGO_DB \
-    --collection $collection_name \
-    --type csv \
-    --headerline \
-    --file /data/csv/$filename \
-    --username $MONGO_USER \
-    --password $MONGO_PASSWORD \
-    --authenticationDatabase admin
+ #docker exec -i cloud-administration-project-db mongoimport \
+#   --db $MONGO_DB \
+#   --collection $collection_name \
+#   --type csv \
+#   --headerline \
+#   --file /data/csv/$filename \
+#   --username $MONGO_USER \
+#   --password $MONGO_PASSWORD \
+#   --authenticationDatabase admin
 done
 
-# ----------------------------
-# 4️⃣ Créer l’index texte sur title
-# ----------------------------
-echo "Creating text index on 'title'..."
-docker exec cloud-administration-project-db mongo $MONGO_DB \
-  --username $MONGO_USER \
-  --password $MONGO_PASSWORD \
-  --authenticationDatabase admin \
-  --eval 'db.movies.createIndex({title: "text"})'
+
+
 
 # ----------------------------
 # 5️⃣ Lancer le conteneur Node.js
@@ -57,6 +50,7 @@ docker exec cloud-administration-project-db mongo $MONGO_DB \
 docker run -d \
   --name cloud-administration-project-app \
   --network cloud-administration-project-network \
+  -v $(pwd)/csv:/data/csv \
   -e PORT=$APP_PORT \
   -e MONGO_HOST=cloud-administration-project-db \
   -e MONGO_PORT=$MONGO_PORT \
