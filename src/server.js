@@ -1,41 +1,50 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const Film = require('./models/Films'); // Import du modèle créé précédemment
-require('dotenv').config();
+const { connectDB } = require('./db/db');
+const app = require('./app');
+const Film = require('./models/Films');
 
-const app = express();
-app.use(express.json());
+const normalizePort = val => {
+    const port = parseInt(val, 10);
 
-// Connexion à MongoDB (Utilise le nom du service Docker)
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("Connecté à MongoDB dans Docker"))
-    .catch(err => console.error("Erreur de connexion:", err));
-
-// ROUTE DE RECHERCHE (Search Query)
-// Exemple: /search?title=Inception ou /search?actor=Leonardo
-app.get('/search', async (req, res) => {
-    try {
-        const { title, actor } = req.query;
-        let query = {};
-
-        if (title) {
-            // Recherche insensible à la casse
-            query.title = { $regex: title, $options: 'i' };
-        }
-
-        if (actor) {
-            // Recherche dans la colonne 'cast' du CSV
-            query.cast = { $regex: actor, $options: 'i' };
-        }
-
-        const results = await Film.find(query).limit(20); // Limite pour la performance
-        res.json(results);
-    } catch (error) {
-        res.status(500).json({ message: "Erreur lors de la recherche", error });
+    if (isNaN(port)) {
+        return val;
     }
+    if (port >= 0) {
+        return port;
+    }
+    return false;
+};
+const port = normalizePort(process.env.PORT || 4200);
+app.set('port', port);
+
+const errorHandler = error => {
+    if (error.syscall !== 'listen') {
+        throw error;
+    }
+    const address = server.address();
+    const bind = typeof address === 'string' ? 'pipe ' + address : 'port: ' + port;
+    switch (error.code) {
+        case 'EACCES':
+            console.error(bind + ' requires elevated privileges.');
+            process.exit(1);
+            break;
+        case 'EADDRINUSE':
+            console.error(bind + ' is already in use.');
+            process.exit(1);
+            break;
+        default:
+            throw error;
+    }
+};
+
+const server = http.createServer(app);
+
+server.on('error', errorHandler);
+server.on('listening', async () => {
+    await connectDB(); // Assure que la DB est connectée avant de démarrer le serveur
+    const address = server.address();
+    const bind = typeof address === 'string' ? 'pipe ' + address : 'port ' + port;
+    console.log('Listening on ' + bind);
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`API lancée sur le port ${PORT}`);
-});
+console.log("Base de données bien chargée");
+server.listen(port);
