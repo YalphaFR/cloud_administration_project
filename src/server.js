@@ -20,7 +20,7 @@ app.get('/search', async (req, res) => {
 
         if (title) {
             // Recherche insensible à la casse
-            query.title = { $regex: title, $options: 'i' }; 
+            query.title = { $regex: title, $options: 'i' };
         }
 
         if (actor) {

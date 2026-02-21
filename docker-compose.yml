@@ -1,27 +1,23 @@
 services:
   api_node:
-    build: .
-    container_name: node_api_container
+    container_name: node_api
+    build: ./src
+    image: node_api_image
     ports:
       - "3000:3000"
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 2G
     networks:
       - netflix_net
     depends_on:
       - mongodb
 
   mongodb:
+    container_name: mongodb
     image: mongo
-    container_name: mongodb_container
+    networks:
+      - netflix_net
     volumes:
       - mongo-data:/data/db
       - ./dataset_films_series.csv:/import.csv
-    networks:
-      - netflix_net
 
 networks:
   netflix_net:
