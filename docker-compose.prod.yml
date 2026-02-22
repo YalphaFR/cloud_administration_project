@@ -1,0 +1,14 @@
+services:
+  api_node:
+    # Pas de volumes → code figé dans l'image
+    command: npm start
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGO_URI=mongodb://mongodb:27017/netflix_db
+    ports:
+      - "3000:3000"
+
+  mongodb:
+    # Mongo n'a pas besoin d'exposer le port en prod si seulement utilisé par API
+    ports: []

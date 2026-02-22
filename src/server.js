@@ -1,6 +1,6 @@
+const http = require('http');
 const { connectDB } = require('./db/db');
 const app = require('./app');
-const Film = require('./models/Films');
 
 const normalizePort = val => {
     const port = parseInt(val, 10);
@@ -41,10 +41,10 @@ const server = http.createServer(app);
 server.on('error', errorHandler);
 server.on('listening', async () => {
     await connectDB(); // Assure que la DB est connectée avant de démarrer le serveur
+    console.log("Base de données bien chargée");
     const address = server.address();
     const bind = typeof address === 'string' ? 'pipe ' + address : 'port ' + port;
     console.log('Listening on ' + bind);
 });
 
-console.log("Base de données bien chargée");
 server.listen(port);

@@ -1,10 +1,10 @@
 services:
   api_node:
     container_name: node_api
-    build: ./src
-    image: node_api_image
-    ports:
-      - "3000:3000"
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    image: cloud_administration_node_api
     networks:
       - netflix_net
     depends_on:
@@ -17,7 +17,7 @@ services:
       - netflix_net
     volumes:
       - mongo-data:/data/db
-      - ./dataset_films_series.csv:/import.csv
+      - ./data/dataset_films_series.csv:/import.csv
 
 networks:
   netflix_net:
