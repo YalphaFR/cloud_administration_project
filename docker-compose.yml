@@ -1,0 +1,27 @@
+services:
+  api_node:
+    container_name: node_api
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    image: cloud_administration_node_api
+    networks:
+      - netflix_net
+    depends_on:
+      - mongodb
+
+  mongodb:
+    container_name: mongodb
+    image: mongo
+    networks:
+      - netflix_net
+    volumes:
+      - mongo-data:/data/db
+      - ./data/dataset_films_series.csv:/import.csv
+
+networks:
+  netflix_net:
+    driver: bridge
+
+volumes:
+  mongo-data:

@@ -1,0 +1,14 @@
+services:
+  api_node:
+    # Montre le code local pour hot reload
+    volumes:
+      - .:/app
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "3000:3000"
+
+  mongodb:
+    ports:
+      - "27017:27017"
