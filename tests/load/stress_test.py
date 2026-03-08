@@ -1,9 +1,10 @@
+"""
 import asyncio
 import aiohttp
 import time
 import math
 from collections import Counter
-URL = "http://localhost/api"
+URL = "http://api_node:3000/movies/top"
 TOTAL_REQUESTS = 1000
 CONCURRENCY = 1000
 TIMEOUT_SECONDS = 10
@@ -15,48 +16,48 @@ PARAMS = {
 }
 
 def percentile(values, p):
-   if not values:
-       return 0.0
-   values = sorted(values)
-   k = math.ceil((p / 100) * len(values)) - 1
-   k = max(0, min(k, len(values) - 1))
-   return values[k]
+    if not values:
+        return 0.0
+    values = sorted(values)
+    k = math.ceil((p / 100) * len(values)) - 1
+    k = max(0, min(k, len(values) - 1))
+    return values[k]
 
 async def make_request(session, request_id, semaphore):
-   async with semaphore:
-       start = time.perf_counter()
-       try:
-           async with session.get(URL, headers=HEADERS, params=PARAMS) as response:
-               await response.read()
-               latency_ms = (time.perf_counter() - start) * 1000
-               return {
-                   "id": request_id,
-                   "ok": 200 <= response.status < 300,
-                   "status": response.status,
-                   "latency_ms": latency_ms,
-                   "error": None
-               }
-       except Exception as e:
-           latency_ms = (time.perf_counter() - start) * 1000
-           return {
-               "id": request_id,
-               "ok": False,
-               "status": None,
-               "latency_ms": latency_ms,
-               "error": str(e)
-           }
+    async with semaphore:
+        start = time.perf_counter()
+        try:
+            async with session.get(URL, headers=HEADERS, params=PARAMS) as response:
+                await response.read()
+                latency_ms = (time.perf_counter() - start) * 1000
+                return {
+                    "id": request_id,
+                    "ok": 200 <= response.status < 300,
+                    "status": response.status,
+                    "latency_ms": latency_ms,
+                    "error": None
+                }
+        except Exception as e:
+            latency_ms = (time.perf_counter() - start) * 1000
+            return {
+                "id": request_id,
+                "ok": False,
+                "status": None,
+                "latency_ms": latency_ms,
+                "error": str(e)
+            }
 
 async def main():
-   timeout = aiohttp.ClientTimeout(total=TIMEOUT_SECONDS)
-   connector = aiohttp.TCPConnector(limit=CONCURRENCY, limit_per_host=CONCURRENCY)
-   semaphore = asyncio.Semaphore(CONCURRENCY)
-   start_total = time.perf_counter()
-   async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-       tasks = [
+    timeout = aiohttp.ClientTimeout(total=TIMEOUT_SECONDS)
+    connector = aiohttp.TCPConnector(limit=CONCURRENCY, limit_per_host=CONCURRENCY)
+    semaphore = asyncio.Semaphore(CONCURRENCY)
+    start_total = time.perf_counter()
+    async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+        tasks = [
            make_request(session, i + 1, semaphore)
            for i in range(TOTAL_REQUESTS)
        ]
-       results = await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks)
     total_time = time.perf_counter() - start_total
     success_count = sum(1 for r in results if r["ok"])
     fail_count = TOTAL_REQUESTS - success_count
@@ -95,4 +96,20 @@ async def main():
         print("None")
 
 if __name__ == "__main__":
-   asyncio.run(main())
+    try:
+        import time
+import requests
+
+while True:
+    try:
+        r = requests.get("http://api_node:3000/movies/top")
+        if r.status_code == 200:
+            break
+    except:
+        pass
+    print("API non prête, attente...")
+    time.sleep(2)
+    asyncio.run(main())
+    except Exception as e:
+        print(f"An error occurred during the stress test: {e}")
+"""
