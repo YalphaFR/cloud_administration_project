@@ -1,9 +1,9 @@
-"""
 import asyncio
 import aiohttp
 import time
 import math
 from collections import Counter
+import requests
 URL = "http://api_node:3000/movies/top"
 TOTAL_REQUESTS = 1000
 CONCURRENCY = 1000
@@ -96,20 +96,17 @@ async def main():
         print("None")
 
 if __name__ == "__main__":
+    while True:
+        try:
+            r = requests.get("http://api_node:3000/movies/top")
+            if r.status_code == 200:
+                break
+        except Exception:
+            pass
+        print("API non prête, attente...")
+        time.sleep(2)
+        
     try:
-        import time
-import requests
-
-while True:
-    try:
-        r = requests.get("http://api_node:3000/movies/top")
-        if r.status_code == 200:
-            break
-    except:
-        pass
-    print("API non prête, attente...")
-    time.sleep(2)
-    asyncio.run(main())
+        asyncio.run(main())
     except Exception as e:
-        print(f"An error occurred during the stress test: {e}")
-"""
+            print(f"An error occurred during the stress test: {e}")

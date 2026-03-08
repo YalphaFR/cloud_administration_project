@@ -22,5 +22,7 @@ services:
     volumes:
       - ./tests:/tests
     command: python /tests/load/stress_test.py
+    networks:
+      - netflix_net
     depends_on:
       - api_node
