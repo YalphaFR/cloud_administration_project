@@ -3,16 +3,16 @@ const app = express();
 
 const Movie = require('./models/movie.model');
 
-const redis = require('redis');
-const client = redis.createClient({
-    url: "redis://localhost:6379" // adapter si Docker ou GCP
+const Redis = require('ioredis');
+const redis = new Redis({
+    host: 'redis',
+    port: 6379
 });
 
-client.on("error", (err) => console.error("Redis Client Error", err));
+redis.on("error", (err) => console.error("Redis Client Error", err));
+const CACHE_KEY = "top_movies";
+const TTL_SECONDS = 60; // TTL initial, sera réinitialisé à chaque lecture
 
-(async () => {
-    await client.connect();
-})();
 
 // Middlewares
 app.use(express.json());
@@ -94,23 +94,25 @@ app.get("/movies/search", async (req, res) => {
 app.get("/movies/top", async (req, res) => {
     endpointHits["/movies/top"] = (endpointHits["/movies/top"] || 0) + 1;
     //console.log(`Top movies hit count: ${endpointHits["/movies/top"]}`);
-    const cacheKey = "top_movies";
-
     try {
-        // 1. Vérifier si les données sont dans Redis
-        const cached = await client.get(cacheKey);
+        // Vérifie le cache
+        const cached = await redis.get(CACHE_KEY);
+
         if (cached) {
+            // Données trouvées : réinitialise le TTL (sliding TTL)
+            await redis.expire(CACHE_KEY, TTL_SECONDS);
             return res.json(JSON.parse(cached));
         }
-        // 2. Si pas en cache, récupérer depuis MongoDB
+
+        // Sinon, va chercher dans la DB
         const movies = await Movie.find()
             .sort({ popularity: -1 })
             .limit(10);
 
-        // 3. Stocker le résultat dans Redis (TTL 60 secondes par ex.)
-        await client.setEx(cacheKey, 60, JSON.stringify(movies));
-        res.json(movies);
+        // Stocke en cache avec TTL
+        await redis.set(CACHE_KEY, JSON.stringify(movies), "EX", TTL_SECONDS);
 
+        res.json(movies);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
