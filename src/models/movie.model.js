@@ -24,6 +24,7 @@ const MovieSchema = new mongoose.Schema({
 
 // Création d'un index de texte pour permettre des recherches globales (titre + cast + description)
 MovieSchema.index({ title: 'text', cast: 'text', description: 'text' });
+MovieSchema.index({ popularity: -1 });
 
 const Movie = mongoose.model('Movie', MovieSchema);
 module.exports = Movie;
