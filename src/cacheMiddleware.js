@@ -18,12 +18,12 @@ async function cacheMiddleware(req, res, next) {
             // Sliding TTL : réinitialise le TTL à chaque lecture
             await redis.expire(key, CACHE_TTL);
 
-            console.log(`[CACHE HIT] ${key}`);
+            //console.log(`[CACHE HIT] ${key}`);
             return res.json(JSON.parse(cached));
         }
 
         // On continue si cache miss
-        console.log(`[CACHE MISS] ${key}`);
+        //console.log(`[CACHE MISS] ${key}`);
         res.sendResponse = res.json;
         res.json = async (body) => {
             // Mettre en cache la réponse
@@ -39,3 +39,13 @@ async function cacheMiddleware(req, res, next) {
     }
 }
 module.exports = cacheMiddleware;
+
+async function logCacheStats() {
+    const info = await redis.info("stats");
+    const hits = info.match(/keyspace_hits:(\d+)/)[1];
+    const misses = info.match(/keyspace_misses:(\d+)/)[1];
+    console.log(`[REDIS STATS] Hits: ${hits}, Misses: ${misses}`);
+}
+
+// Par exemple, toutes les 30 secondes
+setInterval(logCacheStats, 30000);
