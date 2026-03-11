@@ -4,19 +4,33 @@ const app = express();
 const Movie = require('./models/movie.model');
 
 const cacheMiddleware = require('./cacheMiddleware');
+const adjustPool = require('./db/poolManager');
 
 // Middlewares
 app.use(express.json());
 
 // Count hits per endpoint (in-memory, simple prototype)
 const endpointHits = {};
+let activeRequests = 0;
 
 app.use((req, res, next) => {
+    activeRequests++;
+    res.on("finish", () => {
+        activeRequests--;
+    });
+
     const path = req.path;
     endpointHits[path] = (endpointHits[path] || 0) + 1;
-    console.log(`Endpoint "${path}" a été appelé ${endpointHits[path]} fois`);
+    //console.log(`Endpoint "${path}" a été appelé ${endpointHits[path]} fois`);
     next();
 });
+
+setInterval(() => {
+    const loadPercent = (activeRequests / 50) * 100; // 50 = seuil arbitraire
+    adjustPool(loadPercent);
+}, 20000); // Vérifie la charge toutes les 500ms 
+
+// Routes
 
 app.get("/", (req, res) => {
     res.json({ message: "API Netflix Clone opérationnelle 🎬" });
