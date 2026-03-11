@@ -26,6 +26,20 @@ services:
       - netflix_net
     ports:
       - "6379:6379"
+  
+  load-test:
+    container_name: load_test
+    build:
+      context: ./tests/load
+      dockerfile: Dockerfile
+    image: cloud_administration_load_test
+    volumes:
+      - ./tests:/tests
+    command: python /tests/load/stress_test.py
+    networks:
+      - netflix_net
+    depends_on:
+      - api_node
 
 networks:
   netflix_net:
