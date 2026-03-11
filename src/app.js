@@ -92,7 +92,6 @@ app.get("/movies/search", async (req, res) => {
  * Top 10 par popularité
  */
 app.get("/movies/top", async (req, res) => {
-    endpointHits["/movies/top"] = (endpointHits["/movies/top"] || 0) + 1;
     //console.log(`Top movies hit count: ${endpointHits["/movies/top"]}`);
     try {
         // Vérifie le cache
