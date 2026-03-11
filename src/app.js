@@ -3,16 +3,7 @@ const app = express();
 
 const Movie = require('./models/movie.model');
 
-const Redis = require('ioredis');
-const redis = new Redis({
-    host: 'redis',
-    port: 6379
-});
-
-redis.on("error", (err) => console.error("Redis Client Error", err));
-const CACHE_KEY = "top_movies";
-const TTL_SECONDS = 60; // TTL initial, sera réinitialisé à chaque lecture
-
+const cacheMiddleware = require('./cacheMiddleware');
 
 // Middlewares
 app.use(express.json());
@@ -91,27 +82,14 @@ app.get("/movies/search", async (req, res) => {
  * GET /movies/top
  * Top 10 par popularité
  */
-app.get("/movies/top", async (req, res) => {
-    //console.log(`Top movies hit count: ${endpointHits["/movies/top"]}`);
+app.get("/movies/top", cacheMiddleware, async (req, res) => {
     try {
-        // Vérifie le cache
-        const cached = await redis.get(CACHE_KEY);
-
-        if (cached) {
-            // Données trouvées : réinitialise le TTL (sliding TTL)
-            await redis.expire(CACHE_KEY, TTL_SECONDS);
-            return res.json(JSON.parse(cached));
-        }
-
-        // Sinon, va chercher dans la DB
         const movies = await Movie.find()
             .sort({ popularity: -1 })
             .limit(10);
 
-        // Stocke en cache avec TTL
-        await redis.set(CACHE_KEY, JSON.stringify(movies), "EX", TTL_SECONDS);
-
         res.json(movies);
+
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
