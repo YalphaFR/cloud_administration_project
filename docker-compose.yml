@@ -19,6 +19,14 @@ services:
       - mongo-data:/data/db
       - ./data/dataset_films_series.csv:/import.csv
 
+  redis:
+    container_name: redis
+    image: redis:7
+    networks:
+      - netflix_net
+    ports:
+      - "6379:6379"
+
 networks:
   netflix_net:
     driver: bridge
