@@ -1,0 +1,23 @@
+steps:
+  # Étape 1 : Build de l'image Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', 'src/Dockerfile', '-t', 'europe-west9-docker.pkg.dev/$PROJECT_ID/api/api-image', '.']
+
+  # Étape 2 : Push de l'image dans Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'europe-west9-docker.pkg.dev/$PROJECT_ID/api/api-image']
+
+  # Étape 3 : Déploiement automatique sur Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      [
+        'run', 'deploy', 'api-node',
+        '--image', 'europe-west9-docker.pkg.dev/$PROJECT_ID/api/api-image',
+        '--region', 'europe-west9',
+        '--platform', 'managed',
+        '--allow-unauthenticated'
+      ]
+
+images:
+  - 'europe-west9-docker.pkg.dev/$PROJECT_ID/api/api-image'
