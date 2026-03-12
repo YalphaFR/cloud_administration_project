@@ -3,7 +3,7 @@ const app = express();
 
 const Movie = require('./models/movie.model');
 
-const cacheMiddleware = require('./cacheMiddleware');
+//const cacheMiddleware = require('./cacheMiddleware');
 const adjustPool = require('./db/poolManager');
 
 // Middlewares
