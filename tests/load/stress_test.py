@@ -6,6 +6,7 @@ from collections import Counter
 import requests
 URL = "http://api_node:3000/movies/top"
 TOTAL_REQUESTS = 100000
+
 CONCURRENCY = 100
 TIMEOUT_SECONDS = 10
 HEADERS = {
