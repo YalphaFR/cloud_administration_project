@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
-let currentMaxPool = 66;
+let currentMaxPool = 100;
 
 function adjustPool(load) {
     let newMax = currentMaxPool;
 
-    if (load > 50) newMax = 66;  // forte charge, on augmente
+    if (load > 50) newMax = 100;  // forte charge, on augmente
     else if (load < 20) newMax = 10; // faible charge, on réduit
 
     if (newMax !== currentMaxPool) {
