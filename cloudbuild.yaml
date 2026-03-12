@@ -21,3 +21,6 @@ steps:
 
 images:
   - 'europe-west9-docker.pkg.dev/$PROJECT_ID/api/api-image'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
