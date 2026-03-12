@@ -3,8 +3,34 @@ const app = express();
 
 const Movie = require('./models/movie.model');
 
+const cacheMiddleware = require('./cacheMiddleware');
+const adjustPool = require('./db/poolManager');
+
 // Middlewares
 app.use(express.json());
+
+// Count hits per endpoint (in-memory, simple prototype)
+const endpointHits = {};
+let activeRequests = 0;
+
+app.use((req, res, next) => {
+    activeRequests++;
+    res.on("finish", () => {
+        activeRequests--;
+    });
+
+    const path = req.path;
+    endpointHits[path] = (endpointHits[path] || 0) + 1;
+    //console.log(`Endpoint "${path}" a été appelé ${endpointHits[path]} fois`);
+    next();
+});
+
+setInterval(() => {
+    const loadPercent = (activeRequests / 50) * 100; // 50 = seuil arbitraire
+    adjustPool(loadPercent);
+}, 20000); // Vérifie la charge toutes les 500ms 
+
+// Routes
 
 app.get("/", (req, res) => {
     res.json({ message: "API Netflix Clone opérationnelle 🎬" });
@@ -70,7 +96,7 @@ app.get("/movies/search", async (req, res) => {
  * GET /movies/top
  * Top 10 par popularité
  */
-app.get("/movies/top", async (req, res) => {
+app.get("/movies/top", cacheMiddleware, async (req, res) => {
     try {
         const movies = await Movie.find()
             .sort({ popularity: -1 })
@@ -100,6 +126,14 @@ app.get("/movies/:id", async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+app.get("/admin/stats/endpoints", (req, res) => {
+    // Retourne un tableau trié par nombre d'appels
+    const sorted = Object.entries(endpointHits)
+        .sort((a, b) => b[1] - a[1])
+        .map(([endpoint, count]) => ({ endpoint, count }));
+    res.json(sorted);
 });
 
 module.exports = app;

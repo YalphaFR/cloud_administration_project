@@ -5,7 +5,7 @@ ENV=${1:-dev}
 echo "Lancement du projet en mode $ENV ..."
 
 if [ "$ENV" = "dev" ]; then
-  docker-compose down -v   # reset complet en dev
+  docker-compose down
   docker-compose up -d --build
 else
   docker-compose down      # juste stop/restart en prod
