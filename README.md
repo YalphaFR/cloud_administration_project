@@ -169,6 +169,57 @@ gcloud builds submit --config cloudbuild.gke.yaml .
 
 ---
 
+## ⚡ Tests de charge (Load Testing)
+
+Le projet inclut un job Kubernetes qui exécute un script de charge (`tests/load/stress_test.py`) depuis une image Docker dédiée.
+
+### 1) Construire et publier l’image de test
+
+```bash
+gcloud builds submit --config cloudbuild.load-test.yaml .
+```
+
+### 2) Lancer le job de charge
+
+```bash
+kubectl apply -f k8s/load-test-job.yaml
+```
+
+### 3) Suivre les logs
+
+```bash
+kubectl logs job/netflix-load-test -f
+```
+
+### 4) Arrêter / nettoyer
+
+```bash
+kubectl delete job netflix-load-test
+```
+
+> 💡 Il existe un helper script pour lancer + suivre automatiquement : `scripts/run-load-test.sh`
+
+### 5) Ajuster le comportement du test
+
+1. Modifier `tests/load/stress_test.py` (par ex. `TOTAL_REQUESTS`, `CONCURRENCY`, l’URL, etc.).
+
+2. Rebuilder et repasser l’image dans Artifact Registry :
+
+```bash
+gcloud builds submit --config cloudbuild.load-test.yaml .
+```
+
+3. Redéployer le job pour qu’il utilise la nouvelle image :
+
+```bash
+kubectl delete job netflix-load-test --ignore-not-found
+kubectl apply -f k8s/load-test-job.yaml
+```
+
+> 💡 Avec `imagePullPolicy: Always` (déjà configuré), il suffit parfois de redéployer le job sans supprimer l’ancien. Mais la suppression garantit que le nouveau pod va bien récupérer la nouvelle image.
+
+---
+
 ## 🔧 Commandes Docker utiles
 
 * Arrêter tous les conteneurs :

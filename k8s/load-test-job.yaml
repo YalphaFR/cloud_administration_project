@@ -8,6 +8,10 @@ spec:
       containers:
       - name: load-test
         image: europe-west9-docker.pkg.dev/cloud-computing-490021/netflix-repo/load-test:v1
-        command: ["python", "stress_test.py"]
+        imagePullPolicy: Always
+        env:
+          - name: API_URL
+            value: "http://api-node"
+        command: ["python", "-u", "stress_test.py"]
       restartPolicy: Never
   backoffLimit: 0

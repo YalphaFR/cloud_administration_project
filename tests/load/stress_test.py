@@ -1,13 +1,16 @@
 import asyncio
 import aiohttp
+import os
 import time
 import math
 from collections import Counter
 import requests
-URL = "http://api_node/movies/top"
-TOTAL_REQUESTS = 100000
 
-CONCURRENCY = 100
+API_BASE = os.getenv("API_URL", "http://api-node")
+URL = f"{API_BASE}/movies/top"
+TOTAL_REQUESTS = 1000000
+
+CONCURRENCY = 1000
 TIMEOUT_SECONDS = 10
 HEADERS = {
    "Authorization": "Bearer static-token"
@@ -99,14 +102,17 @@ async def main():
 if __name__ == "__main__":
     while True:
         try:
-            r = requests.get("http://api_node:3000/movies/top")
+            r = requests.get(URL, timeout=5)
             if r.status_code == 200:
                 break
-        except Exception:
-            pass
-        print("API non prête, attente...")
+        except Exception as e:
+            print(f"API non prête, attente... ({e})")
+        else:
+            # Si l'API répond mais pas 200, on affiche le code
+            if r.status_code != 200:
+                print(f"API prête mais retourne {r.status_code}, attente...")
         time.sleep(2)
-        
+
     try:
         asyncio.run(main())
     except Exception as e:
