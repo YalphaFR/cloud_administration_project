@@ -3,7 +3,7 @@ const app = express();
 
 const Movie = require('./models/movie.model');
 
-const cacheMiddleware = require('./cacheMiddleware');
+//const cacheMiddleware = require('./cacheMiddleware');
 const adjustPool = require('./db/poolManager');
 
 // Middlewares
@@ -96,7 +96,7 @@ app.get("/movies/search", async (req, res) => {
  * GET /movies/top
  * Top 10 par popularité
  */
-app.get("/movies/top", cacheMiddleware, async (req, res) => {
+app.get("/movies/top", async (req, res) => {
     try {
         const movies = await Movie.find()
             .sort({ popularity: -1 })
