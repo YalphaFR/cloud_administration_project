@@ -4,7 +4,7 @@ import time
 import math
 from collections import Counter
 import requests
-URL = "http://api_node:3000/movies/top"
+URL = "http://api_node/movies/top"
 TOTAL_REQUESTS = 100000
 
 CONCURRENCY = 100
@@ -110,4 +110,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except Exception as e:
-            print(f"An error occurred during the stress test: {e}")
+        print(f"An error occurred during the stress test: {e}")

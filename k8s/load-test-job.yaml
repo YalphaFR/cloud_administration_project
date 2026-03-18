@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: netflix-load-test
+spec:
+  template:
+    spec:
+      containers:
+      - name: load-test
+        image: europe-west9-docker.pkg.dev/cloud-computing-490021/netflix-repo/load-test:v1
+        command: ["python", "stress_test.py"]
+      restartPolicy: Never
+  backoffLimit: 0
