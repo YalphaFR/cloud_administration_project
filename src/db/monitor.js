@@ -3,17 +3,17 @@ const mongoose = require("mongoose");
 async function getDbStats() {
     const conn = mongoose.connection;
 
-    const pool = conn.client.topology.s.pool; // pool interne du driver
+    // Récupération des stats officielles MongoDB
+    const stats = await conn.db.admin().serverStatus();
 
     return {
         state: conn.readyState, // 1 = connected
         maxPoolSize: conn.client.options.maxPoolSize,
         minPoolSize: conn.client.options.minPoolSize,
         connections: {
-            totalCreated: pool.totalConnectionCount,
-            active: pool.connections.size,
-            idle: pool.idleConnections.size,
-            pending: pool.pendingConnectionCount
+            current: stats.connections.current,
+            available: stats.connections.available,
+            totalCreated: stats.connections.totalCreated
         }
     };
 }
