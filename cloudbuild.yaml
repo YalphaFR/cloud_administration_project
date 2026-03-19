@@ -16,13 +16,6 @@ steps:
       '.'
     ]
 
-  # Étape 4 : Push de l'image du load test
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [
-      'push',
-      'europe-west9-docker.pkg.dev/cloud-computing-490021/loadtest/netflix-load-test'
-    ]
-
   # Étape 5 : Déploiement sur GKE
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: bash
