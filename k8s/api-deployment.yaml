@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: api-node
-          image: europe-west9-docker.pkg.dev/PROJECT_ID/api/api-image
+          image: europe-west9-docker.pkg.dev/cloud-computing-490021/api/api-image
           imagePullPolicy: Always
 
           ports:

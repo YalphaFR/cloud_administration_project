@@ -1,14 +1,14 @@
 steps:
   # Étape 1 : Build de l'image Docker pour le test de charge
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-f', 'tests/load/Dockerfile', '-t', 'europe-west9-docker.pkg.dev/$PROJECT_ID/netflix-repo/load-test:v1', '.']
+    args: ['build', '-f', 'tests/load/Dockerfile', '-t', 'europe-west9-docker.pkg.dev/cloud-computing-490021/netflix-repo/load-test:v1', '.']
 
   # Étape 2 : Push de l'image dans Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'europe-west9-docker.pkg.dev/$PROJECT_ID/netflix-repo/load-test:v1']
+    args: ['push', 'europe-west9-docker.pkg.dev/cloud-computing-490021/netflix-repo/load-test:v1']
 
 images:
-  - 'europe-west9-docker.pkg.dev/$PROJECT_ID/netflix-repo/load-test:v1'
+  - 'europe-west9-docker.pkg.dev/cloud-computing-490021/netflix-repo/load-test:v1'
 
 options:
   logging: CLOUD_LOGGING_ONLY
