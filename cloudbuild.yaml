@@ -1,13 +1,29 @@
 steps:
-  # Étape 1 : Build de l'image Docker
+  # Étape 1 : Build de l'image API
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-f', 'src/Dockerfile', '-t', 'europe-west9-docker.pkg.dev/cloud-computing-490021/api/api-image', '.']
 
-  # Étape 2 : Push de l'image dans Artifact Registry
+  # Étape 2 : Push de l'image API
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'europe-west9-docker.pkg.dev/cloud-computing-490021/api/api-image']
 
-  # Étape 3 : Déploiement automatique sur GKE
+  # Étape 3 : Build de l'image du load test
+  - name: 'gcr.io/cloud-builders/docker'
+    dir: 'tests/load'
+    args: [
+      'build',
+      '-t', 'europe-west9-docker.pkg.dev/cloud-computing-490021/loadtest/netflix-load-test',
+      '.'
+    ]
+
+  # Étape 4 : Push de l'image du load test
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'push',
+      'europe-west9-docker.pkg.dev/cloud-computing-490021/loadtest/netflix-load-test'
+    ]
+
+  # Étape 5 : Déploiement sur GKE
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: bash
     args:
@@ -19,6 +35,7 @@ steps:
 
 images:
   - 'europe-west9-docker.pkg.dev/cloud-computing-490021/api/api-image'
+  - 'europe-west9-docker.pkg.dev/cloud-computing-490021/loadtest/netflix-load-test'
 
 options:
   logging: CLOUD_LOGGING_ONLY
