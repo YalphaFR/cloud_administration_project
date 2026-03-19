@@ -6,6 +6,8 @@ const Movie = require('./models/movie.model');
 //const cacheMiddleware = require('./cacheMiddleware');
 const adjustPool = require('./db/poolManager');
 
+const getDbStats = require("./db/monitor");
+
 // Middlewares
 app.use(express.json());
 
@@ -30,10 +32,20 @@ setInterval(() => {
     adjustPool(loadPercent);
 }, 20000); // Vérifie la charge toutes les 500ms 
 
+
 // Routes
 
 app.get("/", (req, res) => {
     res.json({ message: "API Netflix Clone opérationnelle 🎬" });
+});
+
+app.get("/monitor/db", async (req, res) => {
+    try {
+        const stats = await getDbStats();
+        res.json(stats);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 
