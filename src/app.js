@@ -3,7 +3,7 @@ const app = express();
 
 const Movie = require('./models/movie.model');
 
-//const cacheMiddleware = require('./cacheMiddleware');
+const cacheMiddleware = require('./cacheMiddleware');
 const adjustPool = require('./db/poolManager');
 
 // Middlewares
@@ -26,9 +26,9 @@ app.use((req, res, next) => {
 });
 
 setInterval(() => {
-    const loadPercent = (activeRequests / 50) * 100; // 50 = seuil arbitraire
+    const loadPercent = (activeRequests / 100) * 100; // 100 = seuil plus réaliste pour 100 concurrents
     adjustPool(loadPercent);
-}, 20000); // Vérifie la charge toutes les 500ms 
+}, 60000); // Vérifie la charge toutes les 60s
 
 // Routes
 
@@ -96,11 +96,13 @@ app.get("/movies/search", async (req, res) => {
  * GET /movies/top
  * Top 10 par popularité
  */
-app.get("/movies/top", async (req, res) => {
+app.get("/movies/top", cacheMiddleware, async (req, res) => {
     try {
         const movies = await Movie.find()
             .sort({ popularity: -1 })
-            .limit(10);
+            .limit(10)
+            .lean()
+            .select('show_id title popularity release_year');
 
         res.json(movies);
 

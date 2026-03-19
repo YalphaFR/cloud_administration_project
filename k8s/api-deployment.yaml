@@ -6,7 +6,7 @@ kind: Deployment
 metadata:
   name: api-node
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: api-node
@@ -18,10 +18,17 @@ spec:
       containers:
         - name: api-node
           # L'image est remplacée après `kubectl apply` via `kubectl set image`.
-          image: europe-west9-docker.pkg.dev/PROJECT_ID/api/api-image
+          image: europe-west9-docker.pkg.dev/cloud-computing-490021/netflix-repo/api-image
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "1Gi"
+              cpu: "300m"
           env:
             - name: PORT
               value: "3000"

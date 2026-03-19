@@ -1,33 +1,80 @@
 Cloud Administration Project
 
-Projet Node.js / MongoDB pour la gestion de films et séries.  
+Projet Node.js / MongoDB pour la gestion de films et séries.
 Inclut configuration Docker Compose pour **développement** et **production**.
+**Déployé sur GCP GKE avec optimisations de performance avancées**.
 
 ---
 
 ## 🚀 Structure du projet
 
 ```
-
 cloud_administration_project/
 ├─ docker-compose.yml          # services de base
 ├─ docker-compose.override.yml # configuration dev (volumes, nodemon)
 ├─ docker-compose.prod.yml     # configuration prod (pas de volumes, environment sécurisé)
+├─ cloudbuild.yaml             # pipeline Cloud Run
+├─ cloudbuild.gke.yaml         # pipeline GKE (utilisé)
+├─ cloudbuild.load-test.yaml   # pipeline image de test
 ├─ Dockerfile                  # image Node.js pour API
 ├─ package.json
 ├─ package-lock.json
 ├─ src/
 │  ├─ index.js
 │  ├─ server.js
-│  ├─ app.js
-│  └─ db/db.js
+│  ├─ app.js                   # API avec cache Redis et optimisations
+│  ├─ cacheMiddleware.js       # Cache Redis avec TTL 120s
+│  ├─ db/
+│  │  ├─ db.js                 # Connexion MongoDB
+│  │  └─ poolManager.js        # Gestion adaptative du pool de connexions
+│  └─ models/
+│     └─ movie.model.js        # Modèle Mongoose avec indexes
 ├─ data/
-│  └─ dataset_films_series.csv
+│  └─ dataset_films_series.csv # Dataset de 16,000 films/séries
+├─ k8s/                        # Manifests Kubernetes
+│  ├─ api-deployment.yaml      # Déploiement API (3 replicas)
+│  ├─ mongo-statefulset.yaml   # MongoDB avec PVC
+│  ├─ redis-deployment.yaml    # Cache Redis
+│  └─ load-test-job.yaml       # Job de test de charge
+├─ tests/
+│  └─ load/
+│     ├─ Dockerfile            # Image Python pour tests
+│     ├─ requirements.txt
+│     └─ stress_test.py        # Test 100K req, 1000 concurrent
 ├─ scripts/
-│  └─ run.sh                  # script pour lancer dev ou prod
+│  ├─ run.sh                   # script pour lancer dev ou prod
+│  ├─ import.sh                # import CSV (Docker Compose)
+│  └─ run-load-test.sh         # helper test de charge
+├─ mongo-data/                 # Volume persistant MongoDB (local)
 └─ .env                        # variables locales (non commit)
+```
 
-````
+---
+
+## ⚡ Optimisations de Performance Implémentées
+
+### Cache & Base de Données
+- **Redis Cache** : TTL 120s sur `/movies/top` avec sliding expiration
+- **Indexes MongoDB** : `popularity: -1`, texte sur `title+cast+description`
+- **Pool de Connexions** : Gestion adaptative (50-150 connexions selon charge)
+- **Requêtes Optimisées** : `.lean()` + `.select()` pour réduire la charge CPU
+
+### Infrastructure
+- **3 réplicas API** avec ressources optimisées (50m CPU request)
+- **LoadBalancer GCP** avec IP externe stable
+- **PVC MongoDB** 5Gi avec stockage persistant
+- **Autoscaling** prêt (HPA configurable)
+
+### Résultats de Performance
+```
+📊 Test de charge : 100,000 requêtes, 1,000 concurrent
+✅ Latence moyenne : 906ms (vs 1,672ms avant)
+✅ P95 : 1,568ms (vs 2,985ms avant)  
+✅ P99 : 2,482ms (vs 5,781ms avant)
+✅ Taux de succès : 100% (vs 99.991% avant)
+```
+
+**URL de Production** : `http://34.163.159.133/movies/top`
 
 ---
 
@@ -90,90 +137,82 @@ scripts/run.sh
 
 ---
 
-## ☁️ Déploiement sur GKE (Kubernetes)
+## ☁️ Déploiement sur GKE (Kubernetes) - ÉTAT ACTUEL
 
-Ce projet contient des manifests Kubernetes simples dans `k8s/` + un pipeline Cloud Build `cloudbuild.gke.yaml`.
+Le projet est **actuellement déployé** sur GCP GKE avec les optimisations de performance.
 
-### 1) Pré-requis GCP
+### État du Déploiement
+- **Cluster** : `netflix-cluster` (2 nodes e2-medium)
+- **Région** : `europe-west9-a`
+- **API URL** : `http://34.163.159.133/movies/top`
+- **Pods** : 3× API + MongoDB + Redis (tous Running)
+- **Données** : 16,000 films importés
 
-1. Créez un projet GCP et activez les APIs :
-   - `container.googleapis.com` (GKE)
-   - `artifactregistry.googleapis.com` (Artifact Registry)
-   - `cloudbuild.googleapis.com` (Cloud Build)
+### 1) Pré-requis GCP (Déjà configuré)
 
-2. Installez le SDK GCP localement et connectez-vous :
+1. Projet GCP : `cloud-computing-490021`
+2. APIs activées : GKE, Artifact Registry, Cloud Build
+3. SDK GCP installé et authentifié
 
-```bash
-# Installer le SDK GCP (si pas déjà fait)
-curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
-echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-sudo apt-get update && sudo apt-get install google-cloud-cli
-
-# Installer kubectl
-sudo snap install kubectl --classic
-
-# Installer le plugin GKE pour gcloud
-sudo apt-get update && sudo apt-get install google-cloud-cli-gke-gcloud-auth-plugin
-
-# Se connecter à GCP
-gcloud auth login
-gcloud config set project <YOUR_PROJECT_ID>
-```
-
-3. Créez un cluster GKE (exemple avec 2 nodes e2-medium) :
-
-```bash
-gcloud container clusters create netflix-cluster \
-  --zone europe-west9-a \
-  --num-nodes 2 \
-  --machine-type e2-medium
-```
-
-4. Créez un dépôt Artifact Registry pour les images Docker :
-
-```bash
-gcloud artifacts repositories create netflix-repo \
-  --repository-format=docker \
-  --location=europe-west9 \
-  --description="Dépôt pour les images de l'application Netflix"
-```
-
-5. Récupérez les credentials du cluster pour kubectl :
-
-```bash
-gcloud container clusters get-credentials netflix-cluster --zone europe-west9-a
-```
-
-6. Vérifiez que kubectl fonctionne :
-
-```bash
-kubectl get nodes
-```
-
-
-### 2) Déployer via Cloud Build
+### 2) Déploiement Automatique (Pipeline Cloud Build)
 
 Le pipeline `cloudbuild.gke.yaml` :
-- construit l’image via `src/Dockerfile`
-- la pousse dans Artifact Registry
-- applique les manifests Kubernetes dans `k8s/`
+- Construit l'image via `src/Dockerfile`
+- Pousse vers `europe-west9-docker.pkg.dev/cloud-computing-490021/netflix-repo/api-image`
+- Applique les manifests Kubernetes optimisés
 
-Lancer le build :
-
+**Commande de déploiement** :
 ```bash
 gcloud builds submit --config cloudbuild.gke.yaml .
 ```
 
-> ✅ Après le déploiement, récupérez l’URL publique de l’API :
-> - `kubectl get svc api-node` (champ `EXTERNAL-IP`)
+### 3) Vérification du Déploiement
+
+```bash
+# État des pods
+kubectl get pods
+
+# Services et LoadBalancer
+kubectl get services
+
+# Logs de l'API
+kubectl logs -f deployment/api-node
+
+# Test de l'API
+curl http://34.163.159.133/movies/top
+```
 
 ---
 
-## ⚡ Tests de charge (Load Testing)
+## ⚡ Tests de charge (Load Testing) - RÉSULTATS ACTUELS
 
 Le projet inclut un job Kubernetes qui exécute un script de charge (`tests/load/stress_test.py`) depuis une image Docker dédiée.
 
-### 1) Construire et publier l’image de test
+### Résultats de Performance Actuels
+```
+============================================================
+TEST RESULT
+============================================================
+URL: http://api-node/movies/top
+TOTAL REQUESTS: 100000
+CONCURRENCY: 1000
+SUCCESS: 100000
+FAIL: 0
+TOTAL TIME: 92.852s
+AVG LATENCY: 905.94 ms
+MIN LATENCY: 245.67 ms
+MAX LATENCY: 4049.78 ms
+P50: 803.81 ms
+P95: 1567.52 ms
+P99: 2481.57 ms
+
+Status codes:
+200: 100000
+
+Errors: None
+```
+
+### 1) Construire et publier l'image de test
 
 ```bash
 gcloud builds submit --config cloudbuild.load-test.yaml .
@@ -219,7 +258,45 @@ kubectl apply -f k8s/load-test-job.yaml
 > 💡 Avec `imagePullPolicy: Always` (déjà configuré), il suffit parfois de redéployer le job sans supprimer l’ancien. Mais la suppression garantit que le nouveau pod va bien récupérer la nouvelle image.
 
 ---
+## 📊 Monitoring & Administration
 
+### État du Cluster
+```bash
+# Pods et ressources
+kubectl get pods -o wide
+kubectl top pods
+kubectl top nodes
+
+# Services et endpoints
+kubectl get services
+kubectl get endpoints
+
+# Logs des composants
+kubectl logs -f deployment/api-node
+kubectl logs -f mongodb-0
+kubectl logs -f deployment/redis
+```
+
+### Métriques de Performance
+```bash
+# Test rapide de l'API
+curl -w "@curl-format.txt" -o /dev/null -s http://34.163.159.133/movies/top
+
+# Statistiques des endpoints
+curl http://34.163.159.133/admin/stats/endpoints
+```
+
+### Gestion des Ressources
+```bash
+# Autoscaling (optionnel)
+kubectl autoscale deployment api-node --cpu-percent=70 --min=3 --max=10
+
+# Mise à jour des images
+kubectl set image deployment/api-node api-node=europe-west9-docker.pkg.dev/cloud-computing-490021/netflix-repo/api-image:latest
+kubectl rollout status deployment/api-node
+```
+
+---
 ## 🔧 Commandes Docker utiles
 
 * Arrêter tous les conteneurs :
@@ -254,6 +331,7 @@ docker-compose logs -f
 * Collection MongoDB : `movies` (minuscule, pluriel)
 * Champs : camelCase si possible (`releaseYear`, `voteAverage`)
 * Le CSV doit correspondre aux champs du schema Mongoose
+* **Indexes** : `popularity: -1` pour tris rapides, texte pour recherche
 
 ---
 
@@ -261,8 +339,9 @@ docker-compose logs -f
 
 * `.dockerignore` empêche Docker de copier `.env` et autres fichiers sensibles dans l’image.
 * En dev, le volume monte le code local → `.env` est visible et injecté par dotenv.
-* En prod, on ne monte pas de volume → `.env` doit être passé via `environment` ou secrets.
-
+* En prod, on ne monte pas de volume → `.env` doit être passé via `environment` ou secrets.* **Production actuelle** : Déployée sur GKE avec cache Redis et optimisations DB.
+* **Performance** : P99 < 2.5s pour 1000 requêtes concurrentes.
+* **Scalabilité** : Prêt pour HPA et augmentation des replicas.
 ---
 
 ## 📌 Références
@@ -270,3 +349,6 @@ docker-compose logs -f
 * [Docker Compose Documentation](https://docs.docker.com/compose/)
 * [Mongoose Documentation](https://mongoosejs.com/)
 * [MongoDB mongoimport](https://www.mongodb.com/docs/database-tools/mongoimport/)
+* [Kubernetes Documentation](https://kubernetes.io/docs/)
+* [Google Cloud GKE](https://cloud.google.com/kubernetes-engine/docs)
+* [Redis Caching](https://redis.io/documentation)

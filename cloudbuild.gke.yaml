@@ -5,10 +5,10 @@ substitutions:
 steps:
   # 1) Build + push l'image dans Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-f', 'src/Dockerfile', '-t', 'europe-west9-docker.pkg.dev/$PROJECT_ID/api/api-image', '.']
+    args: ['build', '-f', 'src/Dockerfile', '-t', 'europe-west9-docker.pkg.dev/$PROJECT_ID/netflix-repo/api-image', '.']
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'europe-west9-docker.pkg.dev/$PROJECT_ID/api/api-image']
+    args: ['push', 'europe-west9-docker.pkg.dev/$PROJECT_ID/netflix-repo/api-image']
 
   # 2) Déployer sur GKE
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -19,10 +19,10 @@ steps:
         set -e
         gcloud container clusters get-credentials "$_CLUSTER_NAME" --zone "$_CLUSTER_ZONE" --project "$PROJECT_ID"
         kubectl apply -f k8s/
-        kubectl set image deployment/api-node api-node=europe-west9-docker.pkg.dev/$PROJECT_ID/api/api-image
+        kubectl set image deployment/api-node api-node=europe-west9-docker.pkg.dev/$PROJECT_ID/netflix-repo/api-image
 
 images:
-  - 'europe-west9-docker.pkg.dev/$PROJECT_ID/api/api-image'
+  - 'europe-west9-docker.pkg.dev/$PROJECT_ID/netflix-repo/api-image'
 
 options:
   logging: CLOUD_LOGGING_ONLY

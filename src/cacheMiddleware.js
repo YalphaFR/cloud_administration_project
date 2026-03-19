@@ -6,7 +6,7 @@ const redis = new Redis({
 
 redis.on("error", (err) => console.error("Redis Client Error", err));
 
-const CACHE_TTL = 60; // TTL initial en secondes
+const CACHE_TTL = 120; // TTL plus large pour moins de pression sur MongoDB
 
 async function cacheMiddleware(req, res, next) {
     const key = "movies:top"; // clé unique pour ton endpoint

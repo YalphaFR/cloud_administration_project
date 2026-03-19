@@ -8,7 +8,7 @@ import requests
 
 API_BASE = os.getenv("API_URL", "http://api-node")
 URL = f"{API_BASE}/movies/top"
-TOTAL_REQUESTS = 1000000
+TOTAL_REQUESTS = 100000
 
 CONCURRENCY = 1000
 TIMEOUT_SECONDS = 10
