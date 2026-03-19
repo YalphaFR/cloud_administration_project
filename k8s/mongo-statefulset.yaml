@@ -23,7 +23,7 @@ metadata:
   name: mongodb
 spec:
   serviceName: mongodb
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: mongodb
@@ -35,6 +35,7 @@ spec:
       containers:
         - name: mongodb
           image: mongo:6.0
+          command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
           ports:
             - containerPort: 27017
           volumeMounts:

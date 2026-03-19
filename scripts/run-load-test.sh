@@ -1,24 +1,28 @@
 #!/bin/bash
-# Script pour lancer le test de charge et récupérer les résultats
-
 set -e
 
-PROJECT_ID="cloud-computing-490021"
-LOAD_TEST_IMAGE="europe-west9-docker.pkg.dev/$PROJECT_ID/netflix-repo/load-test:v1"
-NAMESPACE="default"
+echo "🚀 Suppression de l'ancien job..."
+kubectl delete job netflix-load-test --ignore-not-found
 
 echo "🚀 Déploiement du job de test de charge..."
 kubectl apply -f k8s/load-test-job.yaml
 
 echo "⏳ Attente du démarrage du pod..."
-sleep 10
+sleep 5
 
-echo "📊 Surveillance du test de charge..."
-while [ $(kubectl get job netflix-load-test -o jsonpath='{.status.completions}') != "1" ]; do
-    DURATION=$(kubectl get job netflix-load-test -o jsonpath='{.status.active}')
-    STATUS=$(kubectl get pod -l job-name=netflix-load-test -o jsonpath='{.items[0].status.phase}')
-    echo "   Status: $STATUS | Duration: $(kubectl get job netflix-load-test -o jsonpath='{.metadata.managedFields[0].time}')"
-    sleep 10
+POD_NAME=$(kubectl get pods -l job-name=netflix-load-test -o jsonpath='{.items[0].metadata.name}')
+
+echo "📊 Pod détecté : $POD_NAME"
+echo "📊 Attente de la fin du test..."
+
+# Attendre que le job soit terminé
+while true; do
+    STATUS=$(kubectl get job netflix-load-test -o jsonpath='{.status.succeeded}')
+    if [ "$STATUS" == "1" ]; then
+        break
+    fi
+    echo "   → Test en cours..."
+    sleep 5
 done
 
 echo "✅ Test complété!"
