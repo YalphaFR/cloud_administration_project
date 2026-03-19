@@ -1,4 +1,4 @@
-Cloud Administration Project
+kubectl get nodesCloud Administration Project
 
 Projet Node.js / MongoDB pour la gestion de films et séries.  
 Inclut configuration Docker Compose pour **développement** et **production**.
